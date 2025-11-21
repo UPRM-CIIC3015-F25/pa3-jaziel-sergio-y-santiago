@@ -549,12 +549,25 @@ class GameState(State):
                 y -= 50
             cardsDict[card] = pygame.Rect(x, y, new_w, new_h)
 
-    # TODO (TASK 2) - Implement a basic card-sorting system without using built-in sort functions.
+    # Done (TASK 2): Santiago Velez Cruz - Implement a basic card-sorting system without using built-in sort functions.
     #   Create a 'suitOrder' list (Hearts, Clubs, Diamonds, Spades), then use nested loops to compare each card
     #   with the ones after it. Depending on the mode, sort by rank first or suit first, swapping cards when needed
     #   until the entire hand is ordered correctly.
     def SortCards(self, sort_by: str = "suit"):
         suitOrder = [Suit.HEARTS, Suit.CLUBS, Suit.DIAMONDS, Suit.SPADES]         # Define the order of suits
+        n = len(self.hand)
+        for i in range(n):
+            for j in range(0, n-i-1):
+                swap = False
+                if sort_by == "rank" and self.hand[j].rank.value < self.hand[j+1].rank.value:
+                    swap = True
+                elif sort_by == "suit":
+                    idx1 = suitOrder.index(self.hand[j].suit)
+                    idx2 = suitOrder.index(self.hand[j+1].suit)
+                    if idx1 > idx2:
+                        swap = True
+                if swap:
+                    self.hand[j], self.hand[j+1] = self.hand[j+1], self.hand[j]
         self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
 
     def checkHoverCards(self):
@@ -810,11 +823,47 @@ class GameState(State):
             w, h = card.scaled_image.get_width(), card.scaled_image.get_height()
             self.cardsSelectedRect[card] = pygame.Rect(start_x + i * spacing, start_y, w, h)
 
-    # TODO (TASK 4) - The function should remove one selected card from the player's hand at a time, calling itself
+    # Done (TASK 4) Santiago Velez Cruz - The function should remove one selected card from the player's hand at a time, calling itself
     #   again after each removal until no selected cards remain (base case). Once all cards have been
     #   discarded, draw new cards to refill the hand back to 8 cards. Use helper functions but AVOID using
     #   iterations (no for/while loops) — the recursion itself must handle repetition. After the
     #   recursion finishes, reset card selections, clear any display text or tracking lists, and
     #   update the visual layout of the player's hand.
-    def discardCards(self, removeFromHand: bool):
+    #helper function
+    def _refillHandRecursively(self):
+        if len(self.hand) >= 8:
+            # reset visual y estados
+            self.cardsSelectedList = []
+            self.cardsSelectedRect = {}
+            self.playerInfo.curHandText = self.playerInfo.textFont1.render("", False, 'white')
+            self.playedHandName = ""
+
+            self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
+            return
+
+        if len(self.deck) == 0:
+            return
+
+        new_card = self.deck.pop(0)
+
+        self.hand.append(new_card)
         self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
+
+        self._refillHandRecursively()
+
+    def discardCards(self, removeFromHand: bool):
+        if len(self.cardsSelectedList) == 0:
+            self._refillHandRecursively()
+            return
+
+        card = self.cardsSelectedList.pop()
+        card.isSelected = False
+
+        if removeFromHand and card in self.hand:
+            self.hand.remove(card)
+        self.used.append(card)
+
+        if card in self.cards:
+            self.cards[card].y += 50
+        self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
+        self.discardCards(removeFromHand)
