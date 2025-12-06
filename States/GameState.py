@@ -524,7 +524,7 @@ class GameState(State):
                         self.deselect_sfx.play()
                     return  # Stop after interacting with one card
 
-    # TODO (TASK 7) - Rewrite this function so that it calculates the player's gold reward *recursively*.
+    # Done (TASK 7) Santiago Vélez Cruz - Rewrite this function so that it calculates the player's gold reward *recursively*.
     #   The recursion should progress through each step of the reward process (base reward, bonus for overkill, etc.)
     #   by calling itself with updated parameters or stages instead of using loops.
     #   Each recursive call should handle a single part of the reward logic, and the final base case should
@@ -535,7 +535,26 @@ class GameState(State):
     #     - A clear base case to stop recursion when all parts are done
     #   Avoid any for/while loops — recursion alone must handle the repetition.
     def calculate_gold_reward(self, playerInfo, stage=0):
+        #base case
+        if stage > 1:
             return 0
+
+        #calcular base gold según tipo de blind
+        if stage == 0:
+            blind = playerInfo.levelManager.curSubLevel.blind
+            if blind.name == "SMALL":
+                gold = 4
+            elif blind.name == "BIG":
+                gold = 8
+            else:
+                gold = 10
+            #llamada recursiva para la siguiente etapa
+            return gold + self.calculate_gold_reward(playerInfo, stage + 1)
+
+        #calcular bonus por overkill
+        if stage == 1:
+            overkill = max(0, playerInfo.roundScore - playerInfo.levelManager.curSubLevel.score)
+            return overkill + self.calculate_gold_reward(playerInfo, stage + 1)
 
     def updateCards(self, posX, posY, cardsDict, cardsList, scale=1.5, spacing=90, baseYOffset=-20, leftShift=40):
         cardsDict.clear()
